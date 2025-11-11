@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Слоты - Casino</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Игровые автоматы</h1>
+            <div class="balance">Баланс: <span>{{ balance }}</span> копейка</div>
+        </div>
+
+        <div class="games-navigation">
+            <a href="/" class="nav-btn">🏠 Главная</a>
+            <a href="/blackjack" class="nav-btn">♠️ Блэкджек</a>
+        </div>
+
+        <div class="slots-machine">
+            <div class="reels">
+                <div class="reel">{{ reels[0] }}</div>
+                <div class="reel">{{ reels[1] }}</div>
+                <div class="reel">{{ reels[2] }}</div>
+            </div>
+
+            <form method="POST" class="controls">
+                <select name="bet">
+                    <option value="10">10 копейка</option>
+                    <option value="25">25 копейка</option>
+                    <option value="50">50 копейка</option>
+                    <option value="100">100 копейка</option>
+                </select>
+                <button type="submit" class="spin-btn">🎰 Крутить!</button>
+            </form>
+
+            {% if message %}
+            <div class="result {% if 'выиграли' in message %}win{% else %}lose{% endif %}">
+                {{ message }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="game-rules">
+            <h3>📖 Правила игры:</h3>
+            <ul>
+                <li>3 одинаковых символа = x5 выигрыш (x10 для 💎)</li>
+                <li>2 одинаковых символа = x2 выигрыш</li>
+                <li>Разные символы = проигрыш</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
