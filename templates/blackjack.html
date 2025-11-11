@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блэкджек - Casino</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>♠️ Блэкджек 21 ♥️</h1>
+            <div class="balance">Баланс: <span>{{ balance }}</span> копейка</div>
+        </div>
+
+        <div class="games-navigation">
+            <a href="/" class="nav-btn">🏠 Главная</a>
+            <a href="/slots" class="nav-btn">🎯 Слоты</a>
+        </div>
+
+        <div class="blackjack-container">
+            <!-- Стадия ставки -->
+            {% if game_state == 'betting' %}
+            <div class="betting-stage">
+                <h2>💰 Сделайте ставку</h2>
+                <form method="POST" class="bet-form">
+                    <div class="bet-options">
+                        <label>
+                            <input type="radio" name="bet" value="10" checked>
+                            <span class="bet-chip">10 копейка</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bet" value="25">
+                            <span class="bet-chip">25 копейка</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bet" value="50">
+                            <span class="bet-chip">50 копейка</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bet" value="100">
+                            <span class="bet-chip">100 копейка</span>
+                        </label>
+                    </div>
+                    <button type="submit" name="action" value="place_bet" class="deal-btn">
+                        🎲 Раздать карты
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Игровой стол -->
+            <div class="game-table">
+                <!-- Рука дилера -->
+                <div class="dealer-section">
+                    <h3>🎩 Дилер: <span class="hand-value">{{ dealer_value }}</span></h3>
+                    <div class="cards-container">
+                        {% for card in dealer_hand %}
+                        <div class="card {% if loop.index == 2 and dealer_value == '?' %}hidden-card{% endif %}">
+                            {{ card }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Разделитель -->
+                <div class="table-divider"></div>
+
+                <!-- Рука игрока -->
+                <div class="player-section">
+                    <h3>👤 Вы: <span class="hand-value">{{ player_value }}</span></h3>
+                    <div class="cards-container">
+                        {% for card in player_hand %}
+                        <div class="card">{{ card }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Текущая ставка -->
+                {% if current_bet > 0 %}
+                <div class="current-bet">
+                    💰 Текущая ставка: <strong>{{ current_bet }} копейка</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Действия игрока -->
+            {% if game_state == 'player_turn' %}
+            <div class="player-actions">
+                <form method="POST" class="action-buttons">
+                    <button type="submit" name="action" value="hit" class="action-btn hit-btn">
+                        ➕ Взять карту
+                    </button>
+                    <button type="submit" name="action" value="stand" class="action-btn stand-btn">
+                        ✋ Хватит
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Новая игра -->
+            {% if game_state == 'game_over' %}
+            <div class="new-game">
+                <form method="POST">
+                    <button type="submit" name="action" value="new_game" class="new-game-btn">
+                        🔄 Новая игра
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Сообщение о результате -->
+            {% if message %}
+            <div class="game-message {% if 'выиграли' in message or 'Блэкджек' in message %}win-message{% else %}lose-message{% endif %}">
+                {{ message }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Правила игры -->
+        <div class="game-rules">
+            <h3>📖 Правила Блэкджека:</h3>
+            <div class="rules-grid">
+                <div class="rule-item">
+                    <span class="rule-icon">🎯</span>
+                    <p>Цель - набрать 21 очко или больше дилера</p>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-icon">🃏</span>
+                    <p>Карты 2-10 = номинал, J/Q/K = 10, A = 1 или 11</p>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-icon">👑</span>
+                    <p>Блэкджек (21) = x2.5 выигрыш</p>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-icon">🤖</span>
+                    <p>Дилер берет карты до 17 очков</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

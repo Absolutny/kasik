@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino - Только сливы</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎰Casino</h1>
+            <p>Только для сливов</p>
+            <div class="balance">Баланс: <span id="balance">{{ balance }}</span> копейка</div>
+        </div>
+
+        <div class="games-grid">
+            <div class="game-card">
+                <h2>🎯 Игровые автоматы</h2>
+                <p>Классические слоты с 3 барабанами</p>
+                <p class="game-features">✨ 3 одинаковых = x5-x10</p>
+                <p class="game-features">✨ 2 одинаковых = x2</p>
+                <a href="/slots" class="play-btn">🎮 Играть в Слоты</a>
+            </div>
+
+            <div class="game-card">
+                <h2>♠️ Блэкджек</h2>
+                <p>21 очко против дилера</p>
+                <p class="game-features">🎯 Цель - 21 очко</p>
+                <p class="game-features">👑 Блэкджек = x2.5</p>
+                <a href="/blackjack" class="play-btn">🎮 Играть в Блэкджек</a>
+            </div>
+        </div>
+
+        <div class="history">
+            <h3>📊 История игр</h3>
+            <div id="history-list">
+                {% for game in history %}
+                <div class="history-item">
+                    <span class="game-type">{{ game.game }}</span>
+                    <span class="bet">Ставка: {{ game.bet }} копейка</span>
+                    <span class="win">Выигрыш: {{ game.win }} копейка</span>
+                    <span class="time">{{ game.timestamp }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <a href="/reset_balance" class="reset-btn">🔄 Сбросить баланс</a>
+    </div>
+</body>
+</html>
