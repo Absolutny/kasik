@@ -18,6 +18,7 @@
 ### Шаги установки
 
 1. **Клонируйте репозиторий**
+
 bash
 git clone https://github.com/ваш-username/demo-casino.git
 cd demo-casino
@@ -47,25 +48,8 @@ python app.py
 
 http://localhost:5005
 
-📁 Файлы проекта
-
-demo-casino/
-├── app.py              # Основной файл Flask
-├── requirements.txt    # Зависимости Python
-├── casino.db          # База данных
-├── static/            # CSS и стили
-└── templates/         # HTML шаблоны
-    ├── index.html     # Главная страница
-    ├── slots.html     # Игровые автоматы
-    ├── blackjack.html # Блэкджек
-    ├── coinflip.html  # Монетка
-    ├── dice.html      # Кости
-    ├── login.html     # Вход
-    └── register.html  # Регистрация
-
 ⚙️ requirements.txt
 
-txt
 Flask==2.3.3
 `
 
@@ -104,6 +88,6 @@ Flask==2.3.3
 📱 Поддерживаемые устройства
 
 ✔️ Компьютеры
-  ✔️ Ноутбуки
-  ✔️ Планшеты
-  ✔️ Телефоны
+✔️ Ноутбуки
+✔️ Планшеты
+✔️ Телефоны
