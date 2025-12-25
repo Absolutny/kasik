@@ -2,30 +2,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация - Менеджер паролей</title>
+    <title>Регистрация - Demo Casino</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <div class="auth-form">
-            <h1>Регистрация</h1>
-            
-            {% if error %}
-            <div class="error">{{ error }}</div>
-            {% endif %}
-            
-            <form method="POST">
-                <div class="form-group">
-                    <input type="text" name="username" placeholder="Имя пользователя" required>
+        <div class="header">
+            <h1>🎰 Demo Casino</h1>
+            <p>Только для развлечения • Виртуальная валюта</p>
+        </div>
+
+        <div class="warning">
+            ⚠️ Это демонстрационная версия! Реальные деньги не используются.
+        </div>
+
+        <div class="auth-container">
+            <div class="auth-form">
+                <h2>📝 Регистрация</h2>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for categories, message in messages %}
+                            <div class="flash-message {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="/auth/register">
+                    <div class="form-group">
+                        <label for="username">Имя пользователя:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Пароль:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirm_password">Подтвердите пароль:</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    
+                    <button type="submit" class="auth-btn">Зарегистрироваться</button>
+                </form>
+                
+                <div class="auth-links">
+                    <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
                 </div>
-                <div class="form-group">
-                    <input type="password" name="password" placeholder="Пароль" required>
-                </div>
-                <button type="submit">Зарегистрироваться</button>
-            </form>
-            
-            <div class="auth-link">
-                Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a>
             </div>
         </div>
     </div>
