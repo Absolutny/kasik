@@ -1,21 +1,87 @@
-<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блэкджек - Casino</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Анимации для блэкджека */
+        @keyframes cardDeal {
+            0% {
+                transform: translateY(-100px) rotate(-10deg);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes cardHit {
+            0% {
+                transform: translateX(-100px) rotate(-20deg);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes chipBet {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes resultPulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 rgba(76, 175, 80, 0);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            }
+        }
+        
+        .card.new-card {
+            animation: cardDeal 0.5s ease-out forwards;
+        }
+        
+        .card.hit-card {
+            animation: cardHit 0.5s ease-out forwards;
+        }
+        
+        .bet-chip.selected {
+            animation: chipBet 0.3s ease-out;
+        }
+        
+        .hand-value {
+            transition: all 0.3s ease;
+        }
+        
+        .hand-value.changed {
+            animation: resultPulse 0.5s ease 2;
+        }
+        
+        .game-message.win-message {
+            animation: resultPulse 1s ease-in-out 3;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>♠️ Блэкджек 21 ♥️</h1>
-            <div class="balance">Баланс: <span>{{ balance }}</span> копейка</div>
+            <div class="balance">Баланс: <span id="balance">{{ balance }}</span> копейка</div>
         </div>
 
         <div class="games-navigation">
             <a href="/" class="nav-btn">🏠 Главная</a>
             <a href="/slots" class="nav-btn">🎯 Слоты</a>
+            <a href="/coinflip" class="nav-btn">🪙 Монетка</a>
+            <a href="/dice" class="nav-btn">🎲 Кости</a>
         </div>
 
         <div class="blackjack-container">
@@ -23,8 +89,8 @@
             {% if game_state == 'betting' %}
             <div class="betting-stage">
                 <h2>💰 Сделайте ставку</h2>
-                <form method="POST" class="bet-form">
-                    <div class="bet-options">
+                <form method="POST" class="bet-form" id="betForm">
+                    <div class="bet-options" id="betOptions">
                         <label>
                             <input type="radio" name="bet" value="10" checked>
                             <span class="bet-chip">10 копейка</span>
@@ -41,8 +107,16 @@
                             <input type="radio" name="bet" value="100">
                             <span class="bet-chip">100 копейка</span>
                         </label>
+                        <label>
+                            <input type="radio" name="bet" value="500">
+                            <span class="bet-chip">500 копейка</span>
+</label>
+                        <label>
+                            <input type="radio" name="bet" value="1000">
+                            <span class="bet-chip">1000 копейка</span>
+                        </label>
                     </div>
-                    <button type="submit" name="action" value="place_bet" class="deal-btn">
+                    <button type="submit" name="action" value="place_bet" class="deal-btn" id="dealBtn">
                         🎲 Раздать карты
                     </button>
                 </form>
@@ -53,10 +127,11 @@
             <div class="game-table">
                 <!-- Рука дилера -->
                 <div class="dealer-section">
-                    <h3>🎩 Дилер: <span class="hand-value">{{ dealer_value }}</span></h3>
-                    <div class="cards-container">
+                    <h3>🎩 Дилер: <span class="hand-value" id="dealerValue">{{ dealer_value }}</span></h3>
+                    <div class="cards-container" id="dealerCards">
                         {% for card in dealer_hand %}
-                        <div class="card {% if loop.index == 2 and dealer_value == '?' %}hidden-card{% endif %}">
+                        <div class="card {% if loop.index == 2 and dealer_value == '?' %}hidden-card{% endif %} 
+                            {% if loop.last and game_state != 'betting' %}new-card{% endif %}">
                             {{ card }}
                         </div>
                         {% endfor %}
@@ -68,17 +143,19 @@
 
                 <!-- Рука игрока -->
                 <div class="player-section">
-                    <h3>👤 Вы: <span class="hand-value">{{ player_value }}</span></h3>
-                    <div class="cards-container">
+                    <h3>👤 Вы: <span class="hand-value" id="playerValue">{{ player_value }}</span></h3>
+                    <div class="cards-container" id="playerCards">
                         {% for card in player_hand %}
-                        <div class="card">{{ card }}</div>
+                        <div class="card {% if loop.last and game_state != 'betting' %}new-card{% endif %}">
+                            {{ card }}
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
 
                 <!-- Текущая ставка -->
                 {% if current_bet > 0 %}
-                <div class="current-bet">
+                <div class="current-bet" id="currentBet">
                     💰 Текущая ставка: <strong>{{ current_bet }} копейка</strong>
                 </div>
                 {% endif %}
@@ -87,11 +164,11 @@
             <!-- Действия игрока -->
             {% if game_state == 'player_turn' %}
             <div class="player-actions">
-                <form method="POST" class="action-buttons">
-                    <button type="submit" name="action" value="hit" class="action-btn hit-btn">
+                <form method="POST" class="action-buttons" id="actionForm">
+                    <button type="submit" name="action" value="hit" class="action-btn hit-btn" id="hitBtn">
                         ➕ Взять карту
                     </button>
-                    <button type="submit" name="action" value="stand" class="action-btn stand-btn">
+                    <button type="submit" name="action" value="stand" class="action-btn stand-btn" id="standBtn">
                         ✋ Хватит
                     </button>
                 </form>
@@ -101,8 +178,8 @@
             <!-- Новая игра -->
             {% if game_state == 'game_over' %}
             <div class="new-game">
-                <form method="POST">
-                    <button type="submit" name="action" value="new_game" class="new-game-btn">
+                <form method="POST" id="newGameForm">
+                    <button type="submit" name="action" value="new_game" class="new-game-btn" id="newGameBtn">
                         🔄 Новая игра
                     </button>
                 </form>
@@ -111,7 +188,8 @@
 
             <!-- Сообщение о результате -->
             {% if message %}
-            <div class="game-message {% if 'выиграли' in message or 'Блэкджек' in message %}win-message{% else %}lose-message{% endif %}">
+            <div class="game-message {% if 'выиграли' in message or 'Блэкджек' in message %}win-message{% else %}lose-message{% endif %}" 
+                 id="gameMessage">
                 {{ message }}
             </div>
             {% endif %}
@@ -123,7 +201,7 @@
             <div class="rules-grid">
                 <div class="rule-item">
                     <span class="rule-icon">🎯</span>
-                    <p>Цель - набрать 21 очко или больше дилера</p>
+<p>Цель - набрать 21 очко или больше дилера</p>
                 </div>
                 <div class="rule-item">
                     <span class="rule-icon">🃏</span>
@@ -140,5 +218,104 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const betChips = document.querySelectorAll('.bet-chip');
+            const dealBtn = document.getElementById('dealBtn');
+            const hitBtn = document.getElementById('hitBtn');
+            const standBtn = document.getElementById('standBtn');
+            const newGameBtn = document.getElementById('newGameBtn');
+            const gameMessage = document.getElementById('gameMessage');
+            const playerValue = document.getElementById('playerValue');
+            const dealerValue = document.getElementById('dealerValue');
+            const playerCards = document.getElementById('playerCards');
+            const dealerCards = document.getElementById('dealerCards');
+            const currentBet = document.getElementById('currentBet');
+            
+            // Анимация выбора фишки
+            betChips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    betChips.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // Анимация кнопок
+            [dealBtn, hitBtn, standBtn, newGameBtn].forEach(btn => {
+                if (btn) {
+                    btn.addEventListener('click', function(e) {
+                        this.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            this.style.transform = 'scale(1)';
+                        }, 100);
+                    });
+                }
+            });
+            
+            // Анимация сообщения
+            if (gameMessage) {
+                if (gameMessage.classList.contains('win-message')) {
+                    gameMessage.classList.add('win-message');
+                }
+                
+                // Автоматическое скрытие сообщения через 5 секунд
+                setTimeout(() => {
+                    if (gameMessage) {
+                        gameMessage.style.opacity = '0';
+                        gameMessage.style.transition = 'opacity 0.5s';
+                        setTimeout(() => {
+                            if (gameMessage && gameMessage.parentNode) {
+                                gameMessage.style.display = 'none';
+                            }
+                        }, 500);
+                    }
+                }, 5000);
+            }
+            
+            // Анимация изменения значений рук
+            if (playerValue) {
+                const originalPlayerValue = playerValue.textContent;
+                const observerPlayer = new MutationObserver(function() {
+                    if (playerValue.textContent !== originalPlayerValue) {
+                        playerValue.classList.add('changed');
+                        setTimeout(() => {
+                            playerValue.classList.remove('changed');
+                        }, 1000);
+                    }
+                });
+                
+                observerPlayer.observe(playerValue, {
+                    characterData: true,
+                    childList: true,
+subtree: true
+                });
+            }
+            
+            if (dealerValue && dealerValue.textContent !== '?') {
+                dealerValue.classList.add('changed');
+                setTimeout(() => {
+                    dealerValue.classList.remove('changed');
+                }, 1000);
+            }
+            
+            // Анимация появления текущей ставки
+            if (currentBet) {
+                currentBet.style.animation = 'chipBet 0.5s ease-out';
+            }
+            
+            // Анимация карт при загрузке
+            setTimeout(() => {
+                const cards = document.querySelectorAll('.card');
+                cards.forEach((card, index) => {
+                    if (card.classList.contains('new-card')) {
+                        setTimeout(() => {
+                            card.style.animation = 'cardDeal 0.5s ease-out forwards';
+                        }, index * 100);
+                    }
+                });
+            }, 100);
+        });
+    </script>
 </body>
 </html>
