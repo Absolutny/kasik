@@ -1,0 +1,317 @@
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подбрось монетку - Casino</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Анимации для монетки */
+        @keyframes coinFlip {
+            0% {
+                transform: rotateY(0deg) scale(1);
+            }
+            25% {
+                transform: rotateY(450deg) scale(1.1);
+            }
+            50% {
+                transform: rotateY(900deg) scale(1);
+            }
+            75% {
+                transform: rotateY(1350deg) scale(1.1);
+            }
+            100% {
+                transform: rotateY(1800deg) scale(1);
+            }
+        }
+        
+        @keyframes choicePulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            }
+        }
+        
+        @keyframes resultWin {
+            0% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .coin {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+        
+        .coin-side {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            backface-visibility: hidden;
+            border: 5px solid #daa520;
+        }
+        
+        .coin-heads {
+            background: radial-gradient(circle at 30% 30%, #ffd700, #daa520);
+            color: #8b4513;
+            z-index: 2;
+        }
+        
+        .coin-tails {
+            background: radial-gradient(circle at 30% 30%, #c0c0c0, #808080);
+            color: #333;
+            transform: rotateY(180deg);
+        }
+        
+        .coin.flipping {
+            animation: coinFlip 1s ease-in-out;
+        }
+        
+        .coin.show-heads {
+            transform: rotateY(0deg);
+        }
+        
+        .coin.show-tails {
+            transform: rotateY(180deg);
+        }
+        
+        .choice-btn.selected {
+            animation: choicePulse 0.5s ease-in-out 3;
+        }
+        
+        .result-message.win {
+            animation: resultWin 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🪙 Подбрось монетку</h1>
+            <div class="balance">Баланс: <span id="balance">{{ balance }}</span> копейка</div>
+        </div>
+
+        <div class="games-navigation">
+            <a href="/" class="nav-btn">🏠 Главная</a>
+            <a href="/slots" class="nav-btn">🎯 Слоты</a>
+            <a href="/blackjack" class="nav-btn">♠️ Блэкджек</a>
+            <a href="/dice" class="nav-btn">🎲 Кости</a>
+        </div>
+
+        <div class="coinflip-container">
+            <div class="coin-stage">
+                <div class="coin {% if result == 'heads' %}show-heads{% elif result == 'tails' %}show-tails{% endif %}" 
+                     id="coin">
+                    <div class="coin-side coin-heads">ОРЁЛ</div>
+                    <div class="coin-side coin-tails">РЕШКА</div>
+                </div>
+            </div>
+
+            <form method="POST" class="betting-form" id="coinForm">
+<div class="bet-selection">
+                    <h3>Выберите ставку:</h3>
+                    <div class="bet-options">
+                        <label>
+                            <input type="radio" name="bet" value="10" checked>
+                            <span class="bet-chip">10 копейка</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bet" value="25">
+                            <span class="bet-chip">25 копейка</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bet" value="50">
+                            <span class="bet-chip">50 копейка</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bet" value="100">
+                            <span class="bet-chip">100 копейка</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="choice-selection">
+                    <h3>Выберите сторону:</h3>
+                    <div class="choice-options">
+                        <label>
+                            <input type="radio" name="choice" value="heads" checked id="choiceHeads">
+                            <span class="choice-btn heads-btn" id="headsBtn">🦅 Орёл</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="choice" value="tails" id="choiceTails">
+                            <span class="choice-btn tails-btn" id="tailsBtn">🏛️ Решка</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="flip-btn" id="flipBtn">
+                    🔄 Подбросить монетку
+                </button>
+            </form>
+
+            {% if message %}
+            <div class="result-message {% if 'угадали' in message %}win{% else %}lose{% endif %}" id="resultMessage">
+                {{ message }}
+            </div>
+            {% endif %}
+
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Побед:</span>
+                    <span class="stat-value">{{ stats.wins }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Всего игр:</span>
+                    <span class="stat-value">{{ stats.total }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Коэффициент:</span>
+                    <span class="stat-value">x2</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-rules">
+            <h3>📖 Правила игры:</h3>
+            <ul>
+                <li>Выберите ставку и сторону монетки (Орёл или Решка)</li>
+                <li>Если угадаете - получаете удвоенную ставку</li>
+                <li>Если не угадаете - теряете ставку</li>
+                <li>Шансы 50/50 - идеально честная игра!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const coin = document.getElementById('coin');
+            const flipBtn = document.getElementById('flipBtn');
+            const headsBtn = document.getElementById('headsBtn');
+            const tailsBtn = document.getElementById('tailsBtn');
+            const choiceHeads = document.getElementById('choiceHeads');
+            const choiceTails = document.getElementById('choiceTails');
+            const resultMessage = document.getElementById('resultMessage');
+            const betChips = document.querySelectorAll('.bet-chip');
+            const coinForm = document.getElementById('coinForm');
+// Анимация выбора стороны
+            headsBtn.addEventListener('click', function() {
+                choiceHeads.checked = true;
+                headsBtn.classList.add('selected');
+                tailsBtn.classList.remove('selected');
+            });
+            
+            tailsBtn.addEventListener('click', function() {
+                choiceTails.checked = true;
+                tailsBtn.classList.add('selected');
+                headsBtn.classList.remove('selected');
+            });
+            
+            // Инициализация выбранной кнопки
+            if (choiceHeads.checked) {
+                headsBtn.classList.add('selected');
+            } else if (choiceTails.checked) {
+                tailsBtn.classList.add('selected');
+            }
+            
+            // Анимация выбора фишки
+            betChips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    betChips.forEach(c => c.style.transform = 'scale(1)');
+                    this.style.transform = 'scale(1.1)';
+                });
+            });
+            
+            // Анимация при клике на кнопку
+            if (flipBtn) {
+                flipBtn.addEventListener('click', function(e) {
+                    if (!coinForm.checkValidity()) {
+                        return;
+                    }
+                    
+                    // Анимация кнопки
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 100);
+                    
+                    // Запуск анимации монетки
+                    coin.classList.add('flipping');
+                    
+                    // После анимации показываем результат
+                    setTimeout(() => {
+                        coin.classList.remove('flipping');
+                        
+                        // Показываем результат, если он есть
+                        if (resultMessage) {
+                            resultMessage.style.display = 'block';
+                            if (resultMessage.classList.contains('win')) {
+                                resultMessage.classList.add('win');
+                            }
+                        }
+                    }, 1000);
+                });
+            }
+            
+            // Автоматический запуск анимации монетки при загрузке, если есть результат
+            {% if result %}
+            setTimeout(() => {
+                coin.classList.add('flipping');
+                setTimeout(() => {
+                    coin.classList.remove('flipping');
+                    // Устанавливаем правильную сторону монетки
+                    coin.classList.remove('show-heads', 'show-tails');
+                    coin.classList.add('show-{{ result }}');
+                }, 1000);
+            }, 500);
+            {% endif %}
+            
+            // Анимация сообщения о результате
+            if (resultMessage) {
+                resultMessage.style.opacity = '0';
+                setTimeout(() => {
+                    resultMessage.style.transition = 'opacity 0.5s';
+                    resultMessage.style.opacity = '1';
+                }, 100);
+                
+                // Автоматическое скрытие сообщения через 5 секунд
+                setTimeout(() => {
+                    resultMessage.style.opacity = '0';
+                    setTimeout(() => {
+                        resultMessage.style.display = 'none';
+                    }, 500);
+                }, 5000);
+            }
+            
+            // Анимация баланса
+            const balanceSpan = document.getElementById('balance');
+            if (balanceSpan) {
+                balanceSpan.addEventListener('DOMSubtreeModified', function() {
+                    this.style.animation = 'none';
+                    setTimeout(() => {
+                        this.style.animation = 'choicePulse 0.5s ease';
+                    }, 10);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кости - Casino</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Анимации для костей */
+        @keyframes diceRoll {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            }
+            25% {
+                transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg);
+            }
+            50% {
+                transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg);
+            }
+            75% {
+                transform: rotateX(540deg) rotateY(270deg) rotateZ(135deg);
+            }
+            100% {
+                transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg);
+            }
+        }
+        
+        @keyframes scoreHighlight {
+            0%, 100% {
+                color: #ffd700;
+                text-shadow: 0 0 5px #ffd700;
+            }
+            50% {
+                color: #fff;
+                text-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700;
+            }
+        }
+        
+        @keyframes vsPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+        }
+        
+        .die {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 10px;
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transform-style: preserve-3d;
+        }
+        
+        .dot {
+            width: 14px;
+            height: 14px;
+            background: #222;
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        /* Расположение точек для каждого значения */
+        .die-1 .dot:nth-child(1) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        
+        .die-2 .dot:nth-child(1) { top: 20%; left: 20%; }
+        .die-2 .dot:nth-child(2) { bottom: 20%; right: 20%; }
+        
+        .die-3 .dot:nth-child(1) { top: 20%; left: 20%; }
+        .die-3 .dot:nth-child(2) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .die-3 .dot:nth-child(3) { bottom: 20%; right: 20%; }
+        
+        .die-4 .dot:nth-child(1) { top: 20%; left: 20%; }
+        .die-4 .dot:nth-child(2) { top: 20%; right: 20%; }
+        .die-4 .dot:nth-child(3) { bottom: 20%; left: 20%; }
+        .die-4 .dot:nth-child(4) { bottom: 20%; right: 20%; }
+        
+        .die-5 .dot:nth-child(1) { top: 20%; left: 20%; }
+        .die-5 .dot:nth-child(2) { top: 20%; right: 20%; }
+        .die-5 .dot:nth-child(3) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .die-5 .dot:nth-child(4) { bottom: 20%; left: 20%; }
+        .die-5 .dot:nth-child(5) { bottom: 20%; right: 20%; }
+        
+        .die-6 .dot:nth-child(1) { top: 20%; left: 20%; }
+        .die-6 .dot:nth-child(2) { top: 20%; right: 20%; }
+        .die-6 .dot:nth-child(3) { top: 50%; left: 20%; transform: translateY(-50%); }
+        .die-6 .dot:nth-child(4) { top: 50%; right: 20%; transform: translateY(-50%); }
+        .die-6 .dot:nth-child(5) { bottom: 20%; left: 20%; }
+        .die-6 .dot:nth-child(6) { bottom: 20%; right: 20%; }
+        
+        .die.rolling {
+            animation: diceRoll 1s ease-out;
+        }
+        
+        .score-value.winner {
+            animation: scoreHighlight 1s ease-in-out 3;
+        }
+        
+        .vs {
+            animation: vsPulse 2s ease-in-out infinite;
+        }
+        
+        .roll-btn:active {
+            transform: scale(0.95);
+transition: transform 0.1s;
+        }
+        
+        .dice-table.winner {
+            border-color: #4CAF50;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎲 Бросок костей</h1>
+            <div class="balance">Баланс: <span id="balance">{{ balance }}</span> копейка</div>
+        </div>
+
+        <div class="games-navigation">
+            <a href="/" class="nav-btn">🏠 Главная</a>
+            <a href="/slots" class="nav-btn">🎯 Слоты</a>
+            <a href="/blackjack" class="nav-btn">♠️ Блэкджек</a>
+            <a href="/coinflip" class="nav-btn">🪙 Монетка</a>
+        </div>
+
+        <div class="dice-container">
+            <div class="dice-stage">
+                <div class="dice-table {% if player_score > dealer_score %}winner{% endif %}" id="playerTable">
+                    <h3>Вы</h3>
+                    <div class="dice-roll">
+                        {% for die_value in player_dice %}
+                        <div class="die die-{{ die_value }}" id="playerDie{{ loop.index }}">
+                            {% for i in range(die_value) %}
+                            <div class="dot"></div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="score">Сумма: <span class="score-value {% if player_score > dealer_score %}winner{% endif %}">
+                        {{ player_score }}
+                    </span></div>
+                </div>
+
+                <div class="vs" id="vs">VS</div>
+
+                <div class="dice-table {% if dealer_score > player_score %}winner{% endif %}" id="dealerTable">
+                    <h3>Дилер</h3>
+                    <div class="dice-roll">
+                        {% for die_value in dealer_dice %}
+                        <div class="die die-{{ die_value }}" id="dealerDie{{ loop.index }}">
+                            {% for i in range(die_value) %}
+                            <div class="dot"></div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="score">Сумма: <span class="score-value {% if dealer_score > player_score %}winner{% endif %}">
+                        {{ dealer_score }}
+                    </span></div>
+                </div>
+            </div>
+
+            <form method="POST" class="dice-controls" id="diceForm">
+                <div class="bet-selection">
+                    <h3>Выберите ставку:</h3>
+                    <div class="bet-options">
+                        {% for bet_value in [10, 25, 50, 100, 200] %}
+                        <label>
+                            <input type="radio" name="bet" value="{{ bet_value }}" {% if bet_value == 10 %}checked{% endif %}>
+                            <span class="bet-chip">{{ bet_value }} копейка</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button type="submit" class="roll-btn" id="rollBtn">
+                    🎲 Бросить кости!
+                </button>
+            </form>
+
+            {% if message %}
+            <div class="result-message {% if 'выиграли' in message %}win{% else %}lose{% endif %}" id="resultMessage">
+                {{ message }}
+            </div>
+            {% endif %}
+
+            <div class="bonus-info">
+                <div class="bonus-item">
+                    <span class="bonus-icon">✨</span>
+                    <span class="bonus-text">Дубль (одинаковые числа) = x3 выигрыш!</span>
+                </div>
+            </div>
+        </div>
+<div class="game-rules">
+            <h3>📖 Правила игры:</h3>
+            <ul>
+                <li>Бросаете 2 кости против дилера</li>
+                <li>Выигрывает тот, у кого больше сумма очков</li>
+                <li>При ничье - ставка возвращается</li>
+                <li>Если у вас выпал дубль (например, 6-6) - выигрыш x3!</li>
+                <li>Обычный выигрыш = x2 ставки</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const rollBtn = document.getElementById('rollBtn');
+            const resultMessage = document.getElementById('resultMessage');
+            const diceForm = document.getElementById('diceForm');
+            const playerDice = [document.getElementById('playerDie1'), document.getElementById('playerDie2')];
+            const dealerDice = [document.getElementById('dealerDie1'), document.getElementById('dealerDie2')];
+            const playerTable = document.getElementById('playerTable');
+            const dealerTable = document.getElementById('dealerTable');
+            const playerScoreValue = document.querySelector('#playerTable .score-value');
+            const dealerScoreValue = document.querySelector('#dealerTable .score-value');
+            const vs = document.getElementById('vs');
+            const betChips = document.querySelectorAll('.bet-chip');
+            
+            // Анимация выбора фишки
+            betChips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    betChips.forEach(c => c.style.transform = 'scale(1)');
+                    this.style.transform = 'scale(1.1)';
+                });
+            });
+            
+            // Анимация при клике на кнопку
+            if (rollBtn) {
+                rollBtn.addEventListener('click', function(e) {
+                    if (!diceForm.checkValidity()) {
+                        return;
+                    }
+                    
+                    // Анимация кнопки
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 100);
+                    
+                    // Анимация костей
+                    playerDice.forEach((die, index) => {
+                        if (die) {
+                            setTimeout(() => {
+                                die.classList.add('rolling');
+                                setTimeout(() => {
+                                    die.classList.remove('rolling');
+                                }, 1000);
+                            }, index * 200);
+                        }
+                    });
+                    
+                    dealerDice.forEach((die, index) => {
+                        if (die) {
+                            setTimeout(() => {
+                                die.classList.add('rolling');
+                                setTimeout(() => {
+                                    die.classList.remove('rolling');
+                                }, 1000);
+                            }, index * 200 + 100);
+                        }
+                    });
+                    
+                    // Анимация VS
+                    if (vs) {
+                        vs.style.animation = 'vsPulse 0.5s ease-in-out 2';
+                        setTimeout(() => {
+                            vs.style.animation = 'vsPulse 2s ease-in-out infinite';
+                        }, 1000);
+                    }
+                });
+            }
+            
+            // Автоматическая анимация при загрузке, если игра уже была
+            {% if rolled %}
+            setTimeout(() => {
+                // Анимация костей игрока
+                playerDice.forEach((die, index) => {
+                    if (die) {
+                        setTimeout(() => {
+                            die.classList.add('rolling');
+                            setTimeout(() => {
+                                die.classList.remove('rolling');
+                            }, 1000);
+                        }, index * 200);
+                    }
+                });
+                
+                // Анимация костей дилера
+                dealerDice.forEach((die, index) => {
+                    if (die) {
+                        setTimeout(() => {
+                            die.classList.add('rolling');
+                            setTimeout(() => {
+                                die.classList.remove('rolling');
+                            }, 1000);
+                        }, index * 200 + 100);
+                    }
+                });
+                
+                // Показываем победителя
+                setTimeout(() => {
+                    const playerScore = parseInt('{{ player_score }}');
+                    const dealerScore = parseInt('{{ dealer_score }}');
+                    
+                    if (playerScore > dealerScore) {
+                        playerTable.classList.add('winner');
+        if (playerScoreValue) {
+                            playerScoreValue.classList.add('winner');
+                        }
+                    } else if (dealerScore > playerScore) {
+                        dealerTable.classList.add('winner');
+                        if (dealerScoreValue) {
+                            dealerScoreValue.classList.add('winner');
+                        }
+                    }
+                }, 1200);
+            }, 300);
+            {% endif %}
+            
+            // Анимация сообщения о результате
+            if (resultMessage) {
+                resultMessage.style.opacity = '0';
+                setTimeout(() => {
+                    resultMessage.style.transition = 'opacity 0.5s';
+                    resultMessage.style.opacity = '1';
+                }, 100);
+                
+                // Автоматическое скрытие сообщения через 5 секунд
+                setTimeout(() => {
+                    resultMessage.style.opacity = '0';
+                    setTimeout(() => {
+                        resultMessage.style.display = 'none';
+                    }, 500);
+                }, 5000);
+            }
+            
+            // Анимация баланса
+            const balanceSpan = document.getElementById('balance');
+            if (balanceSpan) {
+                const observer = new MutationObserver(function() {
+                    balanceSpan.style.animation = 'none';
+                    setTimeout(() => {
+                        balanceSpan.style.animation = 'scoreHighlight 0.5s ease';
+                    }, 10);
+                });
+                
+                observer.observe(balanceSpan, {
+                    characterData: true,
+                    childList: true,
+                    subtree: true
+                });
+            }
+            
+            // Анимация при наведении на кости
+            document.querySelectorAll('.die').forEach(die => {
+                die.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.1) rotate(5deg)';
+                });
+                
+                die.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1) rotate(0deg)';
+                });
+            });
+        });
+        </script>
+</body>
+</html>
