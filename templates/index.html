@@ -1,17 +1,25 @@
-<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casino - Только сливы</title>
+    <title>Demo Casino - Только для развлечения</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='animations.css') }}">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎰Casino</h1>
-            <p>Только для сливов</p>
-            <div class="balance">Баланс: <span id="balance">{{ balance }}</span> копейка</div>
+            <h1>🎰 Demo Casino</h1>
+            <p>Только для развлечения • Виртуальная валюта</p>
+            <div class="user-info">
+                <span class="username">👤 {{ username }}</span>
+                <div class="balance">Баланс: <span id="balance">{{ balance }}</span> копейка</div>
+                <a href="/logout" class="logout-btn">🚪 Выйти</a>
+            </div>
+        </div>
+
+        <div class="warning">
+            ⚠️ Это демонстрационная версия! Реальные деньги не используются.
         </div>
 
         <div class="games-grid">
@@ -29,6 +37,22 @@
                 <p class="game-features">🎯 Цель - 21 очко</p>
                 <p class="game-features">👑 Блэкджек = x2.5</p>
                 <a href="/blackjack" class="play-btn">🎮 Играть в Блэкджек</a>
+            </div>
+
+            <div class="game-card">
+                <h2>🪙 Подбрось монетку</h2>
+                <p>Орел или решка - 50/50 шанс</p>
+                <p class="game-features">🎲 Выигрыш x2</p>
+                <p class="game-features">⚡ Быстрая игра</p>
+                <a href="/coinflip" class="play-btn">🎮 Бросить монетку</a>
+            </div>
+
+            <div class="game-card">
+                <h2>🎲 Кости</h2>
+                <p>Брось два кубика против дилера</p>
+                <p class="game-features">🎯 Больше очков = победа</p>
+                <p class="game-features">✨ Удвоение при дубле</p>
+                <a href="/dice" class="play-btn">🎮 Бросить кости</a>
             </div>
         </div>
 
@@ -48,5 +72,20 @@
 
         <a href="/reset_balance" class="reset-btn">🔄 Сбросить баланс</a>
     </div>
+
+    <script>
+        // Анимация баланса при изменении
+        document.addEventListener('DOMContentLoaded', function() {
+            const balanceEl = document.getElementById('balance');
+            if (balanceEl) {
+                balanceEl.addEventListener('DOMSubtreeModified', function() {
+                    this.style.animation = 'none';
+                    setTimeout(() => {
+                        this.style.animation = 'pulse 0.5s ease';
+                    }, 10);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
