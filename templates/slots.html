@@ -1,42 +1,87 @@
-<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Слоты - Casino</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Анимации для слотов */
+        @keyframes reelSpin {
+            0% { transform: translateY(0); opacity: 0.5; }
+            50% { transform: translateY(-20px); opacity: 0.8; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes winGlow {
+            0%, 100% { 
+                box-shadow: 0 0 5px #4CAF50, 0 0 10px #4CAF50 inset;
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 20px #4CAF50, 0 0 30px #4CAF50 inset;
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes loseShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .reel.spinning {
+            animation: reelSpin 0.3s ease-in-out 3;
+        }
+        
+        .reel.win {
+            animation: winGlow 0.5s ease-in-out 3;
+        }
+        
+        .result.lose {
+            animation: loseShake 0.3s ease-in-out;
+        }
+        
+        .spin-btn:active {
+            transform: scale(0.95);
+            transition: transform 0.1s;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🎯 Игровые автоматы</h1>
-            <div class="balance">Баланс: <span>{{ balance }}</span> копейка</div>
+            <div class="balance">Баланс: <span id="balance">{{ balance }}</span> копейка</div>
         </div>
 
         <div class="games-navigation">
             <a href="/" class="nav-btn">🏠 Главная</a>
             <a href="/blackjack" class="nav-btn">♠️ Блэкджек</a>
+            <a href="/coinflip" class="nav-btn">🪙 Монетка</a>
+            <a href="/dice" class="nav-btn">🎲 Кости</a>
         </div>
 
         <div class="slots-machine">
             <div class="reels">
-                <div class="reel">{{ reels[0] }}</div>
-                <div class="reel">{{ reels[1] }}</div>
-                <div class="reel">{{ reels[2] }}</div>
+                <div class="reel" id="reel1">{{ reels[0] }}</div>
+                <div class="reel" id="reel2">{{ reels[1] }}</div>
+                <div class="reel" id="reel3">{{ reels[2] }}</div>
             </div>
 
-            <form method="POST" class="controls">
+            <form method="POST" class="controls" id="slotsForm">
                 <select name="bet">
                     <option value="10">10 копейка</option>
                     <option value="25">25 копейка</option>
                     <option value="50">50 копейка</option>
                     <option value="100">100 копейка</option>
+                    <option value="500">500 копейка</option>
+                    <option value="1000">1000 копейка</option>
                 </select>
-                <button type="submit" class="spin-btn">🎰 Крутить!</button>
+                <button type="submit" class="spin-btn" id="spinBtn">🎰 Крутить!</button>
             </form>
 
             {% if message %}
-            <div class="result {% if 'выиграли' in message %}win{% else %}lose{% endif %}">
+            <div class="result {% if 'выиграли' in message %}win{% else %}lose{% endif %}" id="resultMessage">
                 {{ message }}
             </div>
             {% endif %}
@@ -51,5 +96,80 @@
             </ul>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const spinBtn = document.getElementById('spinBtn');
+            const resultMessage = document.getElementById('resultMessage');
+            const reels = document.querySelectorAll('.reel');
+            const balanceSpan = document.getElementById('balance');
+            
+            // Если есть сообщение о результате, запускаем анимацию
+if (resultMessage) {
+                if (resultMessage.classList.contains('win')) {
+                    // Анимация выигрыша
+                    setTimeout(() => {
+                        reels.forEach(reel => {
+                            reel.classList.add('win');
+                            setTimeout(() => {
+                                reel.classList.remove('win');
+                            }, 1500);
+                        });
+                    }, 300);
+                } else {
+                    // Анимация проигрыша
+                    resultMessage.classList.add('lose');
+                    setTimeout(() => {
+                        resultMessage.classList.remove('lose');
+                    }, 1000);
+                }
+            }
+            
+            // Анимация при клике на кнопку
+            if (spinBtn) {
+                spinBtn.addEventListener('click', function(e) {
+                    if (!document.getElementById('slotsForm').checkValidity()) {
+                        return;
+                    }
+                    
+                    // Анимация кнопки
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 100);
+                    
+                    // Анимация барабанов
+                    reels.forEach((reel, index) => {
+                        setTimeout(() => {
+                            reel.classList.add('spinning');
+                            setTimeout(() => {
+                                reel.classList.remove('spinning');
+                            }, 900);
+                        }, index * 100);
+                    });
+                });
+            }
+            
+            // Анимация баланса при изменении
+            if (balanceSpan) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'characterData' || mutation.type === 'childList') {
+                            balanceSpan.style.animation = 'none';
+                            setTimeout(() => {
+                                balanceSpan.style.animation = 'winGlow 0.5s ease';
+                            }, 10);
+                        }
+                    });
+                });
+                
+                observer.observe(balanceSpan, {
+                    characterData: true,
+                    childList: true,
+                    subtree: true
+                });
+            }
+        });
+    </script>
 </body>
 </html>
